@@ -1,6 +1,5 @@
-// src/pages/VendorMaster.jsx - Complete vendor management component
+// src/pages/VendorMaster.jsx - Updated with backend integration
 import React, { useState, useEffect } from 'react';
-import { vendorsAPI } from '../services/api';
 
 const VendorMaster = () => {
   const [formData, setFormData] = useState({
@@ -18,6 +17,9 @@ const VendorMaster = () => {
   const [vendors, setVendors] = useState([]);
   const [showVendorList, setShowVendorList] = useState(false);
   const [loadingVendors, setLoadingVendors] = useState(false);
+
+  // API Base URL
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
   // Handle Input Change
   const handleChange = (e) => {
@@ -43,16 +45,23 @@ const VendorMaster = () => {
   const loadVendors = async () => {
     try {
       setLoadingVendors(true);
-      const response = await vendorsAPI.getAll();
+      const response = await fetch(`${API_BASE_URL}/vendors`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const data = await response.json();
       
-      if (response.success) {
-        setVendors(response.data);
+      if (response.ok && data.success) {
+        setVendors(data.data);
       } else {
-        setErrorMessage('Failed to load vendors');
+        setErrorMessage(`Failed to load vendors: ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error loading vendors:', error);
-      setErrorMessage('Failed to load vendors from server');
+      setErrorMessage('Network error. Please check if the backend server is running.');
     } finally {
       setLoadingVendors(false);
     }
@@ -74,31 +83,39 @@ const VendorMaster = () => {
     
     // Validate required fields
     if (!formData.vendorName || !formData.vendorPhoneNo || !formData.vendorEmailId || !formData.vendorAddress) {
-      setErrorMessage('❌ Please fill in all required fields');
+      setErrorMessage('Please fill in all required fields');
       return;
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.vendorEmailId)) {
-      setErrorMessage('❌ Please enter a valid email address');
+      setErrorMessage('Please enter a valid email address');
       return;
     }
 
     // Validate phone number (basic validation)
-    const phoneRegex = /^[+]?[\d\s\-\(\)]{10,}$/;
+    const phoneRegex = /^[+]?[\d\s\-()]{10,}$/;
     if (!phoneRegex.test(formData.vendorPhoneNo)) {
-      setErrorMessage('❌ Please enter a valid phone number');
+      setErrorMessage('Please enter a valid phone number');
       return;
     }
 
     setLoading(true);
     
     try {
-      const response = await vendorsAPI.create(formData);
+      const response = await fetch(`${API_BASE_URL}/vendors`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
 
-      if (response.success) {
-        setSuccessMessage(`✅ Vendor "${formData.vendorName}" registered successfully! Vendor ID: ${response.vendorId}`);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setSuccessMessage(`Vendor "${formData.vendorName}" registered successfully! Vendor ID: ${data.vendorId}`);
         
         // Reset form
         setFormData({
@@ -115,18 +132,14 @@ const VendorMaster = () => {
           loadVendors();
         }
         
-        console.log('Vendor registered successfully:', response);
+        console.log('Vendor registered successfully:', data);
       } else {
-        setErrorMessage(`❌ ${response.error || 'Failed to register vendor'}`);
+        setErrorMessage(`${data.error || 'Failed to register vendor'}`);
       }
       
     } catch (error) {
       console.error('Vendor registration error:', error);
-      if (error.message.includes('already exists')) {
-        setErrorMessage('❌ A vendor with this email or phone number already exists');
-      } else {
-        setErrorMessage('❌ Network error. Please check if the backend server is running.');
-      }
+      setErrorMessage('Network error. Please check if the backend server is running.');
     } finally {
       setLoading(false);
     }
@@ -166,7 +179,7 @@ const VendorMaster = () => {
       {showVendorList && (
         <div className="mb-6 bg-gray-50 border border-gray-200 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            📋 Registered Vendors
+            Registered Vendors
             {loadingVendors && (
               <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
             )}
@@ -189,6 +202,7 @@ const VendorMaster = () => {
                     <th className="border border-gray-300 px-4 py-2 text-left">Vendor Name</th>
                     <th className="border border-gray-300 px-4 py-2 text-left">Phone</th>
                     <th className="border border-gray-300 px-4 py-2 text-left">Email</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">Address</th>
                     <th className="border border-gray-300 px-4 py-2 text-left">Status</th>
                     <th className="border border-gray-300 px-4 py-2 text-left">Created</th>
                   </tr>
@@ -200,6 +214,7 @@ const VendorMaster = () => {
                       <td className="border border-gray-300 px-4 py-2 font-semibold">{vendor.name}</td>
                       <td className="border border-gray-300 px-4 py-2">{vendor.phone}</td>
                       <td className="border border-gray-300 px-4 py-2">{vendor.email}</td>
+                      <td className="border border-gray-300 px-4 py-2 text-sm">{vendor.address}</td>
                       <td className="border border-gray-300 px-4 py-2">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           vendor.status === 'Active' 
@@ -296,7 +311,7 @@ const VendorMaster = () => {
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             />
             <p className="text-sm text-gray-500 mt-1">
-              💡 Optional: Provide API endpoint for third-party integration
+              Optional: Provide API endpoint for third-party integration
             </p>
           </div>
 
@@ -320,9 +335,7 @@ const VendorMaster = () => {
 
         {/* Status Information */}
         <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-          <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
-            📋 Registration Preview
-          </h4>
+          <h4 className="font-semibold text-blue-800 mb-2">Registration Preview</h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
               <span className="font-medium">Status:</span>
@@ -372,18 +385,11 @@ const VendorMaster = () => {
         {/* Help Text */}
         <div className="text-center text-sm text-gray-500 border-t pt-4">
           <div className="flex items-center justify-center gap-4 flex-wrap">
-            <div className="flex items-center gap-1">
-              <span>💡</span>
-              <span>After registration, vendors can be assigned vehicles</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span>📞</span>
-              <span>Ensure contact information is accurate</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span>🔗</span>
-              <span>API integration enables automated booking</span>
-            </div>
+            <span>After registration, vendors can be assigned vehicles</span>
+            <span>•</span>
+            <span>Ensure contact information is accurate</span>
+            <span>•</span>
+            <span>API integration enables automated booking</span>
           </div>
         </div>
       </form>

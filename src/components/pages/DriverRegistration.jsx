@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 
 const DriverRegistration = () => {
   const [formData, setFormData] = useState({
@@ -20,6 +20,10 @@ const DriverRegistration = () => {
 
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // API Base URL
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
   // Handle Input Change
   const handleChange = (e) => {
@@ -41,40 +45,91 @@ const DriverRegistration = () => {
     }
   };
 
+  // Clear messages
+  useEffect(() => {
+    if (successMessage || errorMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage("");
+        setErrorMessage("");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, errorMessage]);
+
   // Submit Form
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
+    
+    // Validate required fields
+    if (!formData.driverName || !formData.phone || !formData.licenseNumber || !formData.experience) {
+      setErrorMessage("❌ Driver name, phone, license number, and experience are required!");
+      return;
+    }
+    
     setLoading(true);
     
-    // Simulate processing delay
-    setTimeout(() => {
-      const driverData = {
-        registrationId: 'REG-' + Date.now(),
-        timestamp: new Date().toISOString(),
-        status: 'ACTIVE',
-        ...formData
+    try {
+      // Prepare data for backend - exactly same fields as original
+      const submitData = {
+        driverName: formData.driverName,
+        dob: formData.dob || null,
+        age: formData.age,
+        gender: formData.gender,
+        address: formData.address,
+        phone: formData.phone,
+        email: formData.email,
+        licenseNumber: formData.licenseNumber,
+        issueDate: formData.issueDate || null,
+        expiryDate: formData.expiryDate || null,
+        experience: formData.experience,
+        emergencyName: formData.emergencyName,
+        emergencyPhone: formData.emergencyPhone
       };
 
-      // Create JSON file for download
-      const jsonData = JSON.stringify(driverData, null, 2);
-      const blob = new Blob([jsonData], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const filename = `${formData.driverName.replace(/[^a-zA-Z0-9]/g, '-')}.json`;
-      
-      const downloadLink = document.createElement('a');
-      downloadLink.href = url;
-      downloadLink.download = filename;
-      downloadLink.style.display = 'none';
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      URL.revokeObjectURL(url);
+      const response = await fetch(`${API_BASE_URL}/drivers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData)
+      });
 
-      setSuccessMessage('✅ Driver registered successfully!');
-      setLoading(false);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setSuccessMessage(`✅ Driver "${formData.driverName}" registered successfully!`);
+        
+        // Reset form
+        setFormData({
+          driverName: '',
+          dob: '',
+          age: '',
+          gender: '',
+          address: '',
+          phone: '',
+          email: '',
+          licenseNumber: '',
+          issueDate: '',
+          expiryDate: '',
+          joiningDate: new Date().toISOString().split('T')[0],
+          experience: '',
+          emergencyName: '',
+          emergencyPhone: ''
+        });
+        
+        console.log('Driver registered successfully:', data);
+      } else {
+        setErrorMessage(`❌ ${data.error || 'Driver registration failed'}`);
+      }
       
-      console.log('Driver registered successfully:', driverData);
-    }, 1000);
+    } catch (error) {
+      console.error('Driver registration error:', error);
+      setErrorMessage("❌ Network error. Please check if the backend server is running.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Get max date for DOB (18 years ago)
@@ -95,8 +150,13 @@ const DriverRegistration = () => {
         </div>
       )}
 
-      {/* FORM START */}
-      <div className="space-y-6">
+      {errorMessage && (
+        <div className="bg-red-100 p-4 rounded-lg text-red-800 mb-4">
+          {errorMessage}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
 
         {/* Personal Information Section */}
         <div>
@@ -315,13 +375,24 @@ const DriverRegistration = () => {
 
         {/* Submit Button */}
         <button
-          onClick={handleSubmit}
+          type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700"
+          className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+            loading
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700 transform hover:scale-[1.02]'
+          } text-white shadow-lg`}
         >
-          {loading ? "Processing..." : "Register Driver"}
+          {loading ? (
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Registering Driver...
+            </div>
+          ) : (
+            'Register Driver'
+          )}
         </button>
-      </div>
+      </form>
     </div>
   );
 };

@@ -1,18 +1,34 @@
-// src/pages/UserRegistration.jsx - Updated version with backend integration
+// src/pages/UserRegistration.jsx - Updated without Channel ID
 import { useState, useCallback, useEffect } from "react";
 
 export default function UserRegistration() {
   const [formData, setFormData] = useState({
+    // Basic Information
+    name: "",
     email: "",
+    phone: "",
+    contactNo: "",
+    deskExtNo: "",
+    deskNo: "",
+    
+    // Authentication
     password: "",
     confirmPassword: "",
-    type: "user",
-    name: "",
-    phone: "",
+    
+    // Organization
+    departmentId: "",
+    regisNo: "",
+    roleId: "2", // Default to regular user
+    
+    // Address & Location
     address: "",
     latitude: "",
     longitude: "",
-    status: "Active"
+    
+    // Status
+    status: "Active",
+    isAvailable: true,
+    isAccountVerified: true
   });
 
   const [strength, setStrength] = useState({ bar: 0, text: "", color: "" });
@@ -25,7 +41,24 @@ export default function UserRegistration() {
   // API Base URL
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-  // Geocoding function to get lat/lng from address
+  // Dropdown options (Channel ID removed)
+  const departmentOptions = [
+    { value: "1", label: "IT Department" },
+    { value: "2", label: "HR Department" },
+    { value: "3", label: "Finance Department" },
+    { value: "4", label: "Operations" },
+    { value: "5", label: "Marketing" },
+    { value: "6", label: "Administration" }
+  ];
+
+  const roleOptions = [
+    { value: "1", label: "Administrator" },
+    { value: "2", label: "Employee" },
+    { value: "3", label: "Manager" },
+    { value: "4", label: "Guest" }
+  ];
+
+  // Geocoding function
   const getCoordinatesFromAddress = useCallback(async (address) => {
     try {
       const response = await fetch(
@@ -83,15 +116,12 @@ export default function UserRegistration() {
   const handleAddressChange = useCallback(async (address) => {
     setFormData(prev => ({ ...prev, address: address }));
     
-    // Clear existing timeout
     if (addressTimeout) {
       clearTimeout(addressTimeout);
     }
     
-    // Auto-geocode after user stops typing (debounce for 1 second)
     if (address.trim().length > 3) {
       const newTimeout = setTimeout(async () => {
-        // Show loading state
         setFormData(prev => ({ 
           ...prev, 
           latitude: 'Loading...', 
@@ -106,7 +136,6 @@ export default function UserRegistration() {
             latitude: coordinates.lat, 
             longitude: coordinates.lng
           }));
-          // Calculate distance with new coordinates
           calculateDistance(parseFloat(coordinates.lat), parseFloat(coordinates.lng));
         } else {
           setFormData(prev => ({ 
@@ -120,7 +149,6 @@ export default function UserRegistration() {
       
       setAddressTimeout(newTimeout);
     } else {
-      // Clear coordinates if address is too short
       setFormData(prev => ({ 
         ...prev, 
         latitude: '', 
@@ -132,21 +160,29 @@ export default function UserRegistration() {
 
   // Handle Input Change
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     
     if (name === "address") {
       handleAddressChange(value);
       return;
     }
     
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
     
     if (name === "password") {
       setStrength(checkPasswordStrength(value));
     }
+
+    // Auto-fill contact number with phone number if empty
+    if (name === "phone" && !formData.contactNo) {
+      setFormData(prev => ({ ...prev, contactNo: value }));
+    }
   };
 
-  // Clear messages when form data changes
+  // Clear messages
   useEffect(() => {
     if (successMessage || errorMessage) {
       const timer = setTimeout(() => {
@@ -157,7 +193,7 @@ export default function UserRegistration() {
     }
   }, [successMessage, errorMessage]);
 
-  // Submit Form - Updated with Backend API
+  // Submit Form
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
@@ -179,31 +215,61 @@ export default function UserRegistration() {
     setLoading(true);
     
     try {
+      // Prepare data for backend (Channel ID removed)
+      const submitData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        address: formData.address,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        type: formData.roleId === "1" ? "admin" : "user",
+        status: formData.status,
+        
+        // Additional fields for backend (no channelId)
+        departmentId: parseInt(formData.departmentId),
+        regisNo: formData.regisNo,
+        contactNo: formData.contactNo,
+        deskExtNo: formData.deskExtNo,
+        deskNo: formData.deskNo,
+        roleId: parseInt(formData.roleId),
+        isAvailable: formData.isAvailable,
+        isAccountVerified: formData.isAccountVerified
+      };
+
       const response = await fetch(`${API_BASE_URL}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       });
 
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setSuccessMessage(`✅ User registered successfully! Distance from office: ${distance}`);
+        setSuccessMessage(`✅ User "${formData.name}" registered successfully! Registration No: ${formData.regisNo}`);
         
         // Reset form
         setFormData({
+          name: "",
           email: "",
+          phone: "",
+          contactNo: "",
+          deskExtNo: "",
+          deskNo: "",
           password: "",
           confirmPassword: "",
-          type: "user",
-          name: "",
-          phone: "",
+          departmentId: "",
+          regisNo: "",
+          roleId: "2",
           address: "",
           latitude: "",
           longitude: "",
-          status: "Active"
+          status: "Active",
+          isAvailable: true,
+          isAccountVerified: true
         });
         setDistance("");
         setStrength({ bar: 0, text: "", color: "" });
@@ -222,9 +288,9 @@ export default function UserRegistration() {
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-lg max-w-4xl mx-auto">
+    <div className="bg-white p-6 rounded-xl shadow-lg max-w-6xl mx-auto">
       <h2 className="text-2xl font-bold text-blue-700 mb-2">User Registration</h2>
-      <p className="text-gray-500 mb-4">Fill the form to register a new user in the system</p>
+      <p className="text-gray-500 mb-4">Complete all fields to register a new user in the system</p>
 
       {successMessage && (
         <div className="bg-green-100 border border-green-400 p-4 rounded-lg text-green-800 mb-4">
@@ -238,14 +304,77 @@ export default function UserRegistration() {
         </div>
       )}
 
-      {/* FORM START */}
       <form onSubmit={handleSubmit} className="space-y-6">
 
-        {/* Personal Information Section */}
+        {/* Organization Information */}
+        <div>
+          <h3 className="text-lg font-semibold text-blue-600 mb-4 pb-2 border-b border-gray-200">Organization Information</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label className="block font-medium">Registration Number *</label>
+              <input
+                type="text"
+                name="regisNo"
+                placeholder="e.g., EMP001, USR001"
+                value={formData.regisNo}
+                onChange={handleChange}
+                required
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block font-medium">Department *</label>
+              <select
+                name="departmentId"
+                value={formData.departmentId}
+                onChange={handleChange}
+                required
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select Department</option>
+                {departmentOptions.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block font-medium">User Role *</label>
+              <select
+                name="roleId"
+                value={formData.roleId}
+                onChange={handleChange}
+                required
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {roleOptions.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+            <div>
+              <label className="block font-medium">Account Status *</label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                required
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Personal Information */}
         <div>
           <h3 className="text-lg font-semibold text-blue-600 mb-4 pb-2 border-b border-gray-200">Personal Information</h3>
           
-          {/* Full Name */}
           <div className="mb-4">
             <label className="block font-medium">Full Name *</label>
             <input
@@ -259,10 +388,9 @@ export default function UserRegistration() {
             />
           </div>
 
-          {/* Email + Phone */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block font-medium">Email *</label>
+              <label className="block font-medium">Email Address *</label>
               <input
                 type="email"
                 name="email"
@@ -274,11 +402,11 @@ export default function UserRegistration() {
               />
             </div>
             <div>
-              <label className="block font-medium">Phone Number *</label>
+              <label className="block font-medium">Mobile Number *</label>
               <input
                 type="tel"
                 name="phone"
-                placeholder="Enter phone number"
+                placeholder="Enter mobile number"
                 value={formData.phone}
                 onChange={handleChange}
                 required
@@ -287,14 +415,54 @@ export default function UserRegistration() {
             </div>
           </div>
 
-          {/* Password + Confirm Password */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label className="block font-medium">Contact Number</label>
+              <input
+                type="tel"
+                name="contactNo"
+                placeholder="Alternative contact number"
+                value={formData.contactNo}
+                onChange={handleChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block font-medium">Desk Extension</label>
+              <input
+                type="text"
+                name="deskExtNo"
+                placeholder="e.g., 1234"
+                value={formData.deskExtNo}
+                onChange={handleChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block font-medium">Desk Number</label>
+              <input
+                type="text"
+                name="deskNo"
+                placeholder="e.g., A-101, B-205"
+                value={formData.deskNo}
+                onChange={handleChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Authentication */}
+        <div>
+          <h3 className="text-lg font-semibold text-blue-600 mb-4 pb-2 border-b border-gray-200">Authentication</h3>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block font-medium">Password *</label>
               <input
                 type="password"
                 name="password"
-                placeholder="Enter password"
+                placeholder="Enter secure password"
                 value={formData.password}
                 onChange={handleChange}
                 required
@@ -321,28 +489,12 @@ export default function UserRegistration() {
               />
             </div>
           </div>
-
-          {/* User Type */}
-          <div className="mb-4">
-            <label className="block font-medium">User Type *</label>
-            <select
-              name="type"
-              value={formData.type}
-              onChange={handleChange}
-              required
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="user">Regular User</option>
-              <option value="admin">Administrator</option>
-            </select>
-          </div>
         </div>
 
-        {/* Address Information Section */}
+        {/* Address Information */}
         <div>
           <h3 className="text-lg font-semibold text-blue-600 mb-4 pb-2 border-b border-gray-200">Address Information</h3>
           
-          {/* Home Address */}
           <div className="mb-4">
             <label className="block font-medium">Home Address *</label>
             <textarea
@@ -354,12 +506,8 @@ export default function UserRegistration() {
               className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
               rows="3"
             />
-            <p className="text-sm text-gray-500 mt-1">
-              💡 Address will be automatically geocoded to get coordinates
-            </p>
           </div>
 
-          {/* Coordinates Display */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label className="block font-medium text-gray-600">Latitude (Auto-filled)</label>
@@ -390,6 +538,38 @@ export default function UserRegistration() {
                 placeholder="Will be calculated automatically"
                 className="w-full p-3 border border-gray-300 rounded-lg bg-green-50 text-gray-700 font-medium"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Account Settings */}
+        <div>
+          <h3 className="text-lg font-semibold text-blue-600 mb-4 pb-2 border-b border-gray-200">Account Settings</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  name="isAvailable"
+                  checked={formData.isAvailable}
+                  onChange={handleChange}
+                  className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="font-medium">User Available for Tasks</span>
+              </label>
+            </div>
+            <div>
+              <label className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  name="isAccountVerified"
+                  checked={formData.isAccountVerified}
+                  onChange={handleChange}
+                  className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="font-medium">Account Verified</span>
+              </label>
             </div>
           </div>
         </div>

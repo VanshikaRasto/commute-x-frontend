@@ -199,18 +199,20 @@ export const apiUtils = {
   },
 
   // Retry mechanism for failed requests
-  retry: async (apiCall, maxRetries = 3, delay = 1000) => {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  retry: async (apiCall, maxRetries = 3, baseDelay = 1000) => {
+    const attemptCall = async (attempt, delay) => {
       try {
         return await apiCall();
       } catch (error) {
-        if (attempt === maxRetries) throw error;
+        if (attempt >= maxRetries) throw error;
         
-        console.warn(`API call failed (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`);
+        console.warn(`API call failed (attempt ${attempt + 1}/${maxRetries}), retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
-        delay *= 2; // Exponential backoff
+        return attemptCall(attempt + 1, delay * 2); // Recursive call with updated delay
       }
-    }
+    };
+    
+    return attemptCall(0, baseDelay);
   }
 };
 

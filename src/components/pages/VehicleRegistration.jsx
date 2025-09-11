@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-const VehicleMaster = () => {
+const VehicleRegistration = () => {
   const [formData, setFormData] = useState({
     vendorName: '',
     vendorPhoneNo: '',
@@ -24,6 +24,10 @@ const VehicleMaster = () => {
 
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // API Base URL
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
   // Handle Input Change
   const handleChange = (e) => {
@@ -34,40 +38,94 @@ const VehicleMaster = () => {
     });
   };
 
+  // Clear messages
+  useEffect(() => {
+    if (successMessage || errorMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage("");
+        setErrorMessage("");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, errorMessage]);
+
   // Submit Form
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
+    
+    // Validate required fields
+    if (!formData.vehicleNo || !formData.vehicleType || !formData.vehicleModel) {
+      setErrorMessage("❌ Vehicle number, type, and model are required!");
+      return;
+    }
+    
     setLoading(true);
     
-    // Simulate processing delay
-    setTimeout(() => {
-      const vehicleData = {
-        vehicleId: 'VEH-' + Date.now(),
-        timestamp: new Date().toISOString(),
-        registrationStatus: formData.activeDeactive ? 'ACTIVE' : 'INACTIVE',
-        ...formData
+    try {
+      // Prepare data for backend - exactly same fields as original
+      const submitData = {
+        vendorName: formData.vendorName,
+        vendorPhoneNo: formData.vendorPhoneNo,
+        vendorEmailId: formData.vendorEmailId,
+        vendorAddress: formData.vendorAddress,
+        vendorAPI: formData.vendorAPI,
+        vehicleNo: formData.vehicleNo,
+        vehicleType: formData.vehicleType,
+        hireType: formData.hireType,
+        vehicleModel: formData.vehicleModel,
+        insuranceExpireDate: formData.insuranceExpireDate || null,
+        pucExpireDate: formData.pucExpireDate || null,
+        activeDeactive: formData.activeDeactive
       };
 
-      // Create JSON file for download
-      const jsonData = JSON.stringify(vehicleData, null, 2);
-      const blob = new Blob([jsonData], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const filename = `${formData.vehicleNo.replace(/[^a-zA-Z0-9]/g, '-') || 'vehicle'}.json`;
-      
-      const downloadLink = document.createElement('a');
-      downloadLink.href = url;
-      downloadLink.download = filename;
-      downloadLink.style.display = 'none';
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      URL.revokeObjectURL(url);
+      const response = await fetch(`${API_BASE_URL}/vehicles`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData)
+      });
 
-      setSuccessMessage('✅ Vehicle registered successfully!');
-      setLoading(false);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setSuccessMessage(`✅ Vehicle "${formData.vehicleNo}" registered successfully!`);
+        
+        // Reset form
+        setFormData({
+          vendorName: '',
+          vendorPhoneNo: '',
+          vendorEmailId: '',
+          vendorAddress: '',
+          vendorAPI: '',
+          vehicleNo: '',
+          vehicleType: '',
+          hireType: 'Custom',
+          vehicleModel: '',
+          insuranceExpireDate: '',
+          pucExpireDate: '',
+          driverName: '',
+          driverPhoneNo: '',
+          dlNo: '',
+          dlExpire: '',
+          activeDeactive: false,
+          gpiDevice: '',
+          registrationDate: new Date().toISOString().split('T')[0]
+        });
+        
+        console.log('Vehicle registered successfully:', data);
+      } else {
+        setErrorMessage(`❌ ${data.error || 'Vehicle registration failed'}`);
+      }
       
-      console.log('Vehicle registered successfully:', vehicleData);
-    }, 1000);
+    } catch (error) {
+      console.error('Vehicle registration error:', error);
+      setErrorMessage("❌ Network error. Please check if the backend server is running.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -81,8 +139,13 @@ const VehicleMaster = () => {
         </div>
       )}
 
-      {/* FORM START */}
-      <div className="space-y-4">
+      {errorMessage && (
+        <div className="bg-red-100 p-4 rounded-lg text-red-800 mb-4">
+          {errorMessage}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
 
         {/* Vendor Name, Phone, Email */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -174,7 +237,6 @@ const VehicleMaster = () => {
               <option value="Hatchback">Hatchback</option>
               <option value="Coupe">Coupe</option>
               <option value="MUV">MUV</option>
-              
             </select>
           </div>
         </div>
@@ -247,56 +309,9 @@ const VehicleMaster = () => {
           </div>
         </div>
 
-        {/* Driver Name, Driver Phone No */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block font-medium text-gray-700 mb-1">Driver Name</label>
-            <input
-              type="text"
-              name="driverName"
-              placeholder="Enter driver name"
-              value={formData.driverName}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-medium text-gray-700 mb-1">Driver Phone No</label>
-            <input
-              type="tel"
-              name="driverPhoneNo"
-              placeholder="Enter driver phone number"
-              value={formData.driverPhoneNo}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-        </div>
+        
 
-        {/* DL No, DL Expire */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block font-medium text-gray-700 mb-1">DL No</label>
-            <input
-              type="text"
-              name="dlNo"
-              placeholder="Enter driving license number"
-              value={formData.dlNo}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-medium text-gray-700 mb-1">DL Expire</label>
-            <input
-              type="date"
-              name="dlExpire"
-              value={formData.dlExpire}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-        </div>
+        
 
         {/* Active/Deactive, GPI Device */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -332,16 +347,27 @@ const VehicleMaster = () => {
         {/* Submit Button */}
         <div className="pt-4">
           <button
-            onClick={handleSubmit}
+            type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700"
-            >
-            {loading ? "Processing..." : "Submit"}
+            className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+              loading
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 transform hover:scale-[1.02]'
+            } text-white shadow-lg`}
+          >
+            {loading ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Registering Vehicle...
+              </div>
+            ) : (
+              'Submit'
+            )}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 };
 
-export default VehicleMaster;
+export default VehicleRegistration;
