@@ -197,11 +197,11 @@ export default function UserRegistration() {
       if (response.ok && data.success) {
         setUsers(data.data || []);
       } else {
-        setErrorMessage(`❌ Failed to fetch users: ${data.error || 'Unknown error'}`);
+        setErrorMessage(`Failed to fetch users: ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Fetch users error:', error);
-      setErrorMessage("❌ Network error while fetching users.");
+      setErrorMessage("Network error while fetching users.");
     } finally {
       setLoadingUsers(false);
     }
@@ -281,14 +281,14 @@ export default function UserRegistration() {
       const data = await response.json();
       
       if (response.ok && data.success) {
-        setSuccessMessage(`✅ User deleted successfully!`);
+        setSuccessMessage(`User deleted successfully!`);
         fetchUsers(); // Refresh the user list
       } else {
-        setErrorMessage(`❌ Failed to delete user: ${data.error || 'Unknown error'}`);
+        setErrorMessage(`Failed to delete user: ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Delete user error:', error);
-      setErrorMessage("❌ Network error while deleting user.");
+      setErrorMessage("Network error while deleting user.");
     } finally {
       setDeleteConfirm(null);
     }
@@ -312,13 +312,13 @@ export default function UserRegistration() {
     setSuccessMessage("");
     
     if (formData.password !== formData.confirmPassword) {
-      setErrorMessage("❌ Passwords do not match!");
+      setErrorMessage("Passwords do not match!");
       return;
     }
     
     // For updates, allow empty passwords (won't update password)
     if (!editingUser && !formData.password) {
-      setErrorMessage("❌ Password is required for new users!");
+      setErrorMessage("Password is required for new users!");
       return;
     }
     
@@ -326,7 +326,7 @@ export default function UserRegistration() {
     if (!formData.latitude || !formData.longitude || 
         formData.latitude === 'Loading...' || formData.longitude === 'Loading...' ||
         formData.latitude === 'Not found' || formData.longitude === 'Not found') {
-      setErrorMessage("❌ Please ensure address has valid coordinates before submitting!");
+      setErrorMessage("Please ensure address has valid coordinates before submitting!");
       return;
     }
     
@@ -376,7 +376,7 @@ export default function UserRegistration() {
 
       if (response.ok && data.success) {
         const action = editingUser ? 'updated' : 'registered';
-        setSuccessMessage(`✅ User "${formData.name}" ${action} successfully! ${!editingUser ? `Registration No: ${formData.regisNo}` : ''}`);
+        setSuccessMessage(`User "${formData.name}" ${action} successfully! ${!editingUser ? `Registration No: ${formData.regisNo}` : ''}`);
         
         // Reset form
         handleCancelEdit();
@@ -388,12 +388,12 @@ export default function UserRegistration() {
         
         console.log(`User ${action} successfully:`, data);
       } else {
-        setErrorMessage(`❌ ${data.error || `${editingUser ? 'Update' : 'Registration'} failed`}`);
+        setErrorMessage(`${data.error || `${editingUser ? 'Update' : 'Registration'} failed`}`);
       }
       
     } catch (error) {
       console.error(`${editingUser ? 'Update' : 'Registration'} error:`, error);
-      setErrorMessage("❌ Network error. Please check if the backend server is running.");
+      setErrorMessage("Network error. Please check if the backend server is running.");
     } finally {
       setLoading(false);
     }
@@ -470,7 +470,7 @@ export default function UserRegistration() {
 
       {/* User List View */}
       {showUserList && (
-        <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+        <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Registered Users</h3>
           
           {loadingUsers ? (
@@ -482,38 +482,38 @@ export default function UserRegistration() {
             <p className="text-gray-500 text-center py-8">No users found</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full bg-white rounded-lg shadow">
+              <table className="w-full bg-white rounded-lg shadow border border-gray-300">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Phone</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Department</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Created</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b border-r border-gray-300">ID</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b border-r border-gray-300">Name</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b border-r border-gray-300">Email</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b border-r border-gray-300">Phone</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b border-r border-gray-300">Department</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b border-r border-gray-300">Role</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b border-r border-gray-300">Status</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b border-r border-gray-300">Created</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b border-gray-300">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((user, index) => (
                     <tr key={user.Id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="px-4 py-3 text-sm text-gray-900">{user.Id}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{user.U_Name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{user.Email_ID}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{user.Mobile_No}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{getDepartmentName(user.Department_Id)}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{getRoleName(user.Role_Id)}</td>
-                      <td className="px-4 py-3 text-sm">
+                      <td className="px-4 py-3 text-sm text-gray-900 border-b border-r border-gray-300">{user.Id}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 border-b border-r border-gray-300">{user.U_Name}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 border-b border-r border-gray-300">{user.Email_ID}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 border-b border-r border-gray-300">{user.Mobile_No}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 border-b border-r border-gray-300">{getDepartmentName(user.Department_Id)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 border-b border-r border-gray-300">{getRoleName(user.Role_Id)}</td>
+                      <td className="px-4 py-3 text-sm border-b border-r border-gray-300">
                         <span className={`px-2 py-1 rounded-full text-xs ${
                           user.IsActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}>
                           {user.IsActive ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{formatDate(user.Created_at)}</td>
-                      <td className="px-4 py-3 text-sm">
+                      <td className="px-4 py-3 text-sm text-gray-900 border-b border-r border-gray-300">{formatDate(user.Created_at)}</td>
+                      <td className="px-4 py-3 text-sm border-b border-gray-300">
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleEditUser(user)}

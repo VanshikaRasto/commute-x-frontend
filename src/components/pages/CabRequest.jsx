@@ -53,6 +53,14 @@ const CabRequestForm = () => {
       return null;
     }
     
+    // Validate token format (basic check)
+    if (!token.includes('.')) {
+      console.error('Invalid token format - not a JWT');
+      setErrorMessage('Invalid token format. Please login again.');
+      localStorage.clear(); // Clear invalid token
+      return null;
+    }
+    
     console.log('Found token:', token.substring(0, 20) + '...');
     
     return {
@@ -65,19 +73,23 @@ const CabRequestForm = () => {
   const testAuthentication = useCallback(async () => {
     const headers = getAuthHeaders();
     if (!headers) return false;
-
+  
     try {
       const response = await fetch(`${API_BASE_URL}/test-auth`, {
         method: 'GET',
         headers: headers
       });
-
+  
       const data = await response.json();
       
       if (response.ok && data.success) {
         console.log('✅ Authentication test successful:', data.user);
         return true;
-      } 
+      } else {
+        console.log('❌ Authentication test failed:', data.error);
+        setErrorMessage(`Authentication failed: ${data.error || 'Please login again'}`);
+        return false;
+      }
     } catch (error) {
       console.error('❌ Authentication test error:', error);
       setErrorMessage('Unable to verify authentication. Please check your connection.');
@@ -95,7 +107,7 @@ const CabRequestForm = () => {
           const user = JSON.parse(storedUserInfo);
           setUserInfo(user);
           setUserRole(user.role || user.U_Role);
-          console.log('👤 User loaded:', { name: user.name, role: user.role });
+          console.log('User loaded:', { name: user.name, role: user.role });
         } catch (error) {
           console.error('Error parsing user info:', error);
         }
@@ -132,7 +144,7 @@ const CabRequestForm = () => {
         url += `&status=${statusFilter}`;
       }
 
-      console.log('📋 Loading requests from:', url);
+      console.log('Loading requests from:', url);
 
       const response = await fetch(url, {
         method: 'GET',
@@ -142,7 +154,7 @@ const CabRequestForm = () => {
       const data = await response.json();
       
       if (response.ok && data.success) {
-        console.log('✅ Requests loaded:', data.data.length);
+        console.log('Requests loaded:', data.data.length);
         setRequests(data.data);
         setErrorMessage(''); // Clear any previous errors
       } else {
@@ -155,7 +167,7 @@ const CabRequestForm = () => {
         }
       }
     } catch (error) {
-      console.error('❌ Error loading requests:', error);
+      console.error('Error loading requests:', error);
       setErrorMessage('Network error. Please check if the backend server is running.');
     } finally {
       setLoadingRequests(false);
@@ -188,7 +200,7 @@ const CabRequestForm = () => {
     if (!address || address.trim().length < 3) return null;
     
     try {
-      console.log('🔍 Geocoding address:', address);
+      console.log('Geocoding address:', address);
       
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&addressdetails=1&countrycodes=in`,
@@ -204,28 +216,28 @@ const CabRequestForm = () => {
       }
       
       const data = await response.json();
-      console.log('📍 Geocoding response:', data);
+      console.log('Geocoding response:', data);
       
       if (data && data.length > 0) {
         const result = {
           lat: parseFloat(data[0].lat).toFixed(6),
           lng: parseFloat(data[0].lon).toFixed(6)
         };
-        console.log('✅ Coordinates found:', result);
+        console.log('Coordinates found:', result);
         return result;
       }
       
-      console.log('❌ No coordinates found for address');
+      console.log('No coordinates found for address');
       return null;
     } catch (error) {
-      console.error('💥 Geocoding error:', error);
+      console.error('Geocoding error:', error);
       return null;
     }
   }, []);
 
   // FIXED ADDRESS CHANGE HANDLER
   const handleAddressChange = useCallback(async (fieldType, address) => {
-    console.log(`🏠 Address change for ${fieldType}:`, address);
+    console.log(`Address change for ${fieldType}:`, address);
     
     const isPickup = fieldType === 'pickupLocation';
     const latField = isPickup ? 'pickupLat' : 'destinationLat';
@@ -258,20 +270,20 @@ const CabRequestForm = () => {
     
     // Start geocoding after delay
     timeoutRefs.current[timeoutKey] = setTimeout(async () => {
-      console.log(`🚀 Starting geocoding for ${fieldType}`);
+      console.log(`Starting geocoding for ${fieldType}`);
       
       try {
         const coordinates = await getCoordinatesFromAddress(address.trim());
         
         if (coordinates) {
-          console.log(`✅ Setting coordinates for ${fieldType}:`, coordinates);
+          console.log(`Setting coordinates for ${fieldType}:`, coordinates);
           setFormData(prev => ({ 
             ...prev, 
             [latField]: coordinates.lat, 
             [lngField]: coordinates.lng
           }));
         } else {
-          console.log(`❌ No coordinates found for ${fieldType}`);
+          console.log(`No coordinates found for ${fieldType}`);
           setFormData(prev => ({ 
             ...prev, 
             [latField]: 'Not found', 
@@ -279,7 +291,7 @@ const CabRequestForm = () => {
           }));
         }
       } catch (error) {
-        console.error(`💥 Error geocoding ${fieldType}:`, error);
+        console.error(`Error geocoding ${fieldType}:`, error);
         setFormData(prev => ({ 
           ...prev, 
           [latField]: 'Error', 
@@ -362,8 +374,8 @@ const CabRequestForm = () => {
         requestedDateTime: formData.requestedDateTime
       };
 
-      console.log('🚗 Sending cab request:', requestData);
-      console.log('📡 Using headers:', { ...headers, Authorization: headers.Authorization.substring(0, 20) + '...' });
+      console.log('Sending cab request:', requestData);
+      console.log('Using headers:', { ...headers, Authorization: headers.Authorization.substring(0, 20) + '...' });
 
       const response = await fetch(`${API_BASE_URL}/cab-requests`, {
         method: 'POST',
@@ -372,11 +384,11 @@ const CabRequestForm = () => {
       });
 
       const data = await response.json();
-      console.log('📥 Response status:', response.status);
-      console.log('📥 Response data:', data);
+      console.log('Response status:', response.status);
+      console.log('Response data:', data);
 
       if (response.ok && data.success) {
-        setSuccessMessage(`✅ Cab request submitted successfully! Request ID: ${data.requestId}`);
+        setSuccessMessage(`Cab request submitted successfully! Request ID: ${data.requestId}`);
         
         // Reset form
         setFormData({
@@ -395,32 +407,40 @@ const CabRequestForm = () => {
         }
       } else {
         if (response.status === 401) {
-          setErrorMessage('❌ Authentication failed. Please login again.');
+          setErrorMessage('Authentication failed. Please login again.');
           // Optionally redirect to login
         } else if (response.status === 403) {
-          setErrorMessage('❌ Access denied. You do not have permission to create cab requests.');
+          setErrorMessage('Access denied. You do not have permission to create cab requests.');
         } else {
-          setErrorMessage(`❌ ${data.error || data.message || 'Failed to submit cab request'}`);
+          setErrorMessage(`${data.error || data.message || 'Failed to submit cab request'}`);
         }
       }
       
     } catch (error) {
-      console.error('💥 Cab request error:', error);
+      console.error('Cab request error:', error);
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        setErrorMessage('❌ Network error. Please check if the backend server is running at ' + API_BASE_URL);
+        setErrorMessage('Network error. Please check if the backend server is running at ' + API_BASE_URL);
       } else {
-        setErrorMessage('❌ Unexpected error occurred. Please try again.');
+        setErrorMessage('Unexpected error occurred. Please try again.');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // Update request status (for users to cancel their own requests)
+  // FIXED Update request status function
   const updateRequestStatus = async (requestId, newStatus) => {
     try {
+      setSuccessMessage('');
+      setErrorMessage('');
+      
       const headers = getAuthHeaders();
-      if (!headers) return;
+      if (!headers) {
+        setErrorMessage('Authentication token not found. Please login again.');
+        return;
+      }
+
+      console.log(`Updating request ${requestId} to status ${newStatus}`);
 
       const response = await fetch(`${API_BASE_URL}/cab-requests/${requestId}/status`, {
         method: 'PATCH',
@@ -429,16 +449,30 @@ const CabRequestForm = () => {
       });
 
       const data = await response.json();
+      console.log('Status update response:', data);
 
       if (response.ok && data.success) {
         setSuccessMessage(`Request ${requestId} status updated to ${newStatus}`);
-        loadRequests(filters.status, filters.page); // Refresh the list
+        // Refresh the list immediately
+        await loadRequests(filters.status, filters.page);
       } else {
-        setErrorMessage(`Failed to update status: ${data.error || data.message}`);
+        if (response.status === 401) {
+          setErrorMessage('Authentication failed. Please login again.');
+        } else if (response.status === 403) {
+          setErrorMessage('Access denied. You do not have permission to update requests.');
+        } else if (response.status === 404) {
+          setErrorMessage(`Request ${requestId} not found.`);
+        } else {
+          setErrorMessage(`Failed to update status: ${data.message || data.error || 'Unknown error'}`);
+        }
       }
     } catch (error) {
-      console.error('Error updating status:', error);
-      setErrorMessage('Error updating request status');
+      console.error('Error updating request status:', error);
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        setErrorMessage('Network error. Please check if the backend server is running.');
+      } else {
+        setErrorMessage('Error updating request status. Please try again.');
+      }
     }
   };
 
@@ -726,8 +760,6 @@ const CabRequestForm = () => {
           </div>
         </div>
 
-        
-
         {/* Submit Button */}
         <div className="pt-4">
           <button
@@ -759,13 +791,7 @@ const CabRequestForm = () => {
             )}
           </button>
         </div>
-
-        
-       
-        
       </form>
-
-      
     </div>
   );
 };

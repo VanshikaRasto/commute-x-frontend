@@ -400,17 +400,26 @@ export default function Dashboard() {
                   {selectedKPI === 'users' && kpiData.map((user, index) => (
                     <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-medium text-gray-900">{user.name || user.username || `User ${index + 1}`}</h3>
+                        <h3 className="font-medium text-gray-900">{user.U_Name || `User ${index + 1}`}</h3>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                            user.IsActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {user.IsActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
-                        <div><strong>ID:</strong> {user.id || user._id || user.userId || 'N/A'}</div>
-                        <div><strong>Email:</strong> {user.email || user.emailAddress || 'N/A'}</div>
-                        <div><strong>Phone:</strong> {user.phone || user.phoneNumber || user.mobile || 'N/A'}</div>
-                        <div><strong>Role:</strong> {user.role || user.userType || user.type || 'User'}</div>
-                      </div>
-                      {/* Debug info - remove this after fixing */}
-                      <div className="mt-2 text-xs text-gray-400 border-t pt-2">
-                        Debug: {JSON.stringify(user, null, 2)}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600">
+                        <div><strong>ID:</strong> {user.Id || 'N/A'}</div>
+                        <div><strong>Email:</strong> {user.Email_ID || 'N/A'}</div>
+                        <div><strong>Phone:</strong> {user.Mobile_No || user.Contact_No || 'N/A'}</div>
+                        <div><strong>Role:</strong> {
+                          user.Role_Id === 1 ? 'Admin' : 
+                          user.Role_Id === 2 ? 'Employee' : 
+                          user.Role_Id === 3 ? 'Manager' : 'Guest'
+                        }</div>
+                        <div><strong>Department:</strong> {user.Department_Id || 'N/A'}</div>
+                        <div><strong>Created:</strong> {formatDate(user.Created_at)}</div>
                       </div>
                     </div>
                   ))}
@@ -418,21 +427,26 @@ export default function Dashboard() {
                   {selectedKPI === 'vehicles' && kpiData.map((vehicle, index) => (
                     <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-medium text-gray-900">{vehicle.number || 'N/A'}</h3>
+                        <h3 className="font-medium text-gray-900">{vehicle.vehicleNo || vehicle.Vehicle_No || 'N/A'}</h3>
                         <div className="flex items-center gap-2">
                           <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                            vehicle.status === 'Available' ? 'bg-green-100 text-green-700' : 
-                            vehicle.status === 'On Trip' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
+                            vehicle.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                           }`}>
                             {vehicle.status || 'Unknown'}
                           </span>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
-                        <div><strong>ID:</strong> {vehicle.id || vehicle._id}</div>
-                        <div><strong>Model:</strong> {vehicle.model || 'N/A'}</div>
-                        <div><strong>Type:</strong> {vehicle.type || 'N/A'}</div>
-                        <div><strong>Created:</strong> {formatDate(vehicle.createdAt)}</div>
+                        <div><strong>ID:</strong> {vehicle.id || vehicle.Id || 'N/A'}</div>
+                        <div><strong>Model:</strong> {vehicle.vehicleModel || vehicle.Vehicle_Model || 'N/A'}</div>
+                        <div><strong>Type:</strong> {vehicle.vehicleType || vehicle.Vehicle_Type || 'N/A'}</div>
+                        <div><strong>Created:</strong> {formatDate(vehicle.createdAt || vehicle.Created_at)}</div>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mt-2">
+                        <div><strong>Vendor:</strong> {vehicle.vendorName || vehicle.Vendor_Name || 'N/A'}</div>
+                        <div><strong>Hire Type:</strong> {vehicle.hireType || vehicle.Vehicle_Hire_Type || 'N/A'}</div>
+                        <div><strong>Insurance:</strong> {vehicle.insurance ? 'Yes' : 'No'}</div>
+                        <div><strong>PUC:</strong> {vehicle.puc ? 'Yes' : 'No'}</div>
                       </div>
                     </div>
                   ))}
