@@ -359,7 +359,7 @@ function Login({ onLogin }) {
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('userInfo', JSON.stringify(data.user));
         
-        setIsLogging(false);
+        setIsLogging(true);
         onLogin(data.user); // Pass user data to parent
       } else {
         setError(data.error || 'Login failed');

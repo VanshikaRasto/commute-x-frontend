@@ -182,9 +182,8 @@ export default function Dashboard() {
   const kpiCards = [
     { 
       icon: "👥", 
-      label: "Total Users", 
-      value: stats.users.toLocaleString(), 
-      change: "+12.5%",
+      label: "Total Users",  // Removed the emoji from here
+      value: stats.users.toLocaleString(),
       bgColor: "bg-blue-50",
       iconBg: "bg-blue-100",
       textColor: "text-blue-600",
@@ -194,7 +193,7 @@ export default function Dashboard() {
       icon: "🚗", 
       label: "Active Vehicles", 
       value: stats.vehicles.toLocaleString(), 
-      change: "+8.3%",
+
       bgColor: "bg-emerald-50",
       iconBg: "bg-emerald-100",
       textColor: "text-emerald-600",
@@ -204,7 +203,7 @@ export default function Dashboard() {
       icon: "🧑‍✈️", 
       label: "Drivers Online", 
       value: stats.drivers.toLocaleString(), 
-      change: "+15.7%",
+    
       bgColor: "bg-purple-50",
       iconBg: "bg-purple-100",
       textColor: "text-purple-600",
@@ -214,7 +213,7 @@ export default function Dashboard() {
       icon: "🗺️", 
       label: "Active Routes", 
       value: stats.routes.toLocaleString(), 
-      change: "+4.2%",
+    
       bgColor: "bg-orange-50",
       iconBg: "bg-orange-100",
       textColor: "text-orange-600",
@@ -225,141 +224,6 @@ export default function Dashboard() {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString();
-  };
-
-  // Handle user deletion
-  const handleDeleteUser = async (userId, userName) => {
-    if (window.confirm(`Are you sure you want to delete user ${userName}?`)) {
-      try {
-        const response = await usersAPI.delete(userId);
-        if (response.success) {
-          // Refresh the users list
-          await fetchKPIData(selectedKPI);
-          // Show success message
-          window.dispatchEvent(new CustomEvent('userDeleted', { 
-            detail: { 
-              activity: `User ${userName} deleted successfully`,
-              type: 'user'
-            } 
-          }));
-        }
-      } catch (error) {
-        console.error('Error deleting user:', error);
-        setError('Failed to delete user');
-      }
-    }
-  };
-
-  // Handle edit user with better UI feedback
-  const handleEditUser = (user) => {
-    // For now, just show an alert
-    // In a real app, you would open a modal or navigate to edit page
-    alert(`Edit user: ${user.name}\nID: ${user._id || user.id}`);
-  };
-
-  // Handle edit vehicle
-  const handleEditVehicle = (vehicle) => {
-    // For now, just show an alert with vehicle details
-    // In a real app, you would open a modal or navigate to edit page
-    alert(`Edit vehicle:\nNumber: ${vehicle.number || 'N/A'}\nModel: ${vehicle.model || 'N/A'}\nID: ${vehicle._id || vehicle.id}`);
-  };
-
-  // Handle vehicle deletion
-  const handleDeleteVehicle = async (vehicleId, vehicleNumber) => {
-    if (window.confirm(`Are you sure you want to delete vehicle ${vehicleNumber}?`)) {
-      try {
-        // In a real app, you would call your API to delete the vehicle
-        // const response = await vehiclesAPI.delete(vehicleId);
-        // if (response.success) {
-        //   // Refresh the vehicles list
-        //   await fetchKPIData(selectedKPI);
-        //   // Show success message
-        //   window.dispatchEvent(new CustomEvent('vehicleDeleted', { 
-        //     detail: { 
-        //       activity: `Vehicle ${vehicleNumber} deleted successfully`,
-        //       type: 'vehicle'
-        //     } 
-        //   }));
-        // }
-        
-        // For now, just show a success message
-        alert(`Vehicle ${vehicleNumber} (ID: ${vehicleId}) would be deleted in a real app`);
-        
-      } catch (error) {
-        console.error('Error deleting vehicle:', error);
-        setError('Failed to delete vehicle');
-      }
-    }
-  };
-
-  // Handle edit driver
-  const handleEditDriver = (driver) => {
-    // For now, just show an alert with driver details
-    // In a real app, you would open a modal or navigate to edit page
-    alert(`Edit driver:\nName: ${driver.name || 'N/A'}\nLicense: ${driver.license || 'N/A'}\nID: ${driver._id || driver.id}`);
-  };
-
-  // Handle driver deletion
-  const handleDeleteDriver = async (driverId, driverName) => {
-    if (window.confirm(`Are you sure you want to delete driver ${driverName}?`)) {
-      try {
-        // In a real app, you would call your API to delete the driver
-        // const response = await driversAPI.delete(driverId);
-        // if (response.success) {
-        //   // Refresh the drivers list
-        //   await fetchKPIData(selectedKPI);
-        //   // Show success message
-        //   window.dispatchEvent(new CustomEvent('driverDeleted', { 
-        //     detail: { 
-        //       activity: `Driver ${driverName} deleted successfully`,
-        //       type: 'driver'
-        //     } 
-        //   }));
-        // }
-        
-        // For now, just show a success message
-        alert(`Driver ${driverName} (ID: ${driverId}) would be deleted in a real app`);
-        
-      } catch (error) {
-        console.error('Error deleting driver:', error);
-        setError('Failed to delete driver');
-      }
-    }
-  };
-
-  // Handle edit route
-  const handleEditRoute = (route) => {
-    // For now, just show an alert with route details
-    // In a real app, you would open a modal or navigate to edit page
-    alert(`Edit route:\nName: ${route.name || 'N/A'}\nRoute No: ${route.routeNo || 'N/A'}\nID: ${route._id || route.id}`);
-  };
-
-  // Handle route deletion
-  const handleDeleteRoute = async (routeId, routeName) => {
-    if (window.confirm(`Are you sure you want to delete route ${routeName}?`)) {
-      try {
-        // In a real app, you would call your API to delete the route
-        // const response = await routesAPI.delete(routeId);
-        // if (response.success) {
-        //   // Refresh the routes list
-        //   await fetchKPIData(selectedKPI);
-        //   // Show success message
-        //   window.dispatchEvent(new CustomEvent('routeDeleted', { 
-        //     detail: { 
-        //       activity: `Route ${routeName} deleted successfully`,
-        //       type: 'route'
-        //     } 
-        //   }));
-        // }
-        
-        // For now, just show a success message
-        alert(`Route ${routeName} (ID: ${routeId}) would be deleted in a real app`);
-        
-      } catch (error) {
-        console.error('Error deleting route:', error);
-        setError('Failed to delete route');
-      }
-    }
   };
 
   if (loading) {
@@ -409,32 +273,29 @@ export default function Dashboard() {
 
       <div className="p-8 space-y-8">
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {kpiCards.map((kpi, index) => (
-            <div 
-              key={index} 
-              onClick={() => fetchKPIData(kpi.type)}
-              className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 cursor-pointer"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className={`w-12 h-12 ${kpi.iconBg} rounded-xl flex items-center justify-center text-xl`}>
-                  {kpi.icon}
-                </div>
-                <span className={`text-sm font-semibold ${kpi.textColor} bg-gray-50 px-3 py-1 rounded-lg`}>
-                  {kpi.change}
-                </span>
-              </div>
-              
-              <div className="mb-3">
-                <p className="text-3xl font-bold text-gray-900">{kpi.value}</p>
-              </div>
-              
-              <p className="text-gray-600 font-medium">{kpi.label}</p>
-              <p className="text-gray-400 text-sm mt-1">Click to view details</p>
-            </div>
-          ))}
+        {/* KPI Cards - Compact Version */}
+<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+  {kpiCards.map((kpi, index) => (
+    <div 
+      key={index} 
+      onClick={() => fetchKPIData(kpi.type)}
+      className="bg-white rounded-lg border border-gray-200 p-2 hover:shadow-md transition-all duration-150 cursor-pointer"
+    >
+      <div className="flex items-center justify-between">
+        {/* Left side - Icon */}
+        <div className={`w-8 h-8 ${kpi.iconBg} rounded-md flex items-center justify-center text-sm`}>
+          {kpi.icon}
         </div>
-
+        
+        {/* Right side - Content */}
+        <div className="text-right">
+          <p className="text-xs text-gray-500 whitespace-nowrap">{kpi.label}</p>
+          <p className="text-base font-bold text-gray-800">{kpi.value}</p>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Recent Activity */}
@@ -539,41 +400,17 @@ export default function Dashboard() {
                   {selectedKPI === 'users' && kpiData.map((user, index) => (
                     <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-medium text-gray-900">{user.name}</h3>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditUser(user);
-                            }}
-                            className="inline-flex items-center px-3 py-1.5 border border-blue-100 text-xs font-medium rounded-lg text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 shadow-sm transition-all duration-200"
-                            title="Edit user"
-                          >
-                            <svg className="h-3.5 w-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Edit
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteUser(user._id || user.id, user.name);
-                            }}
-                            className="inline-flex items-center px-3 py-1.5 border border-red-100 text-xs font-medium rounded-lg text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-500 shadow-sm transition-all duration-200"
-                            title="Delete user"
-                          >
-                            <svg className="h-3.5 w-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            Delete
-                          </button>
-                        </div>
+                        <h3 className="font-medium text-gray-900">{user.name || user.username || `User ${index + 1}`}</h3>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
-                        <div><strong>ID:</strong> {user.id || user._id}</div>
-                        <div><strong>Email:</strong> {user.email}</div>
-                        <div><strong>Phone:</strong> {user.phone || 'N/A'}</div>
-                        <div><strong>Role:</strong> {user.role || 'User'}</div>
+                        <div><strong>ID:</strong> {user.id || user._id || user.userId || 'N/A'}</div>
+                        <div><strong>Email:</strong> {user.email || user.emailAddress || 'N/A'}</div>
+                        <div><strong>Phone:</strong> {user.phone || user.phoneNumber || user.mobile || 'N/A'}</div>
+                        <div><strong>Role:</strong> {user.role || user.userType || user.type || 'User'}</div>
+                      </div>
+                      {/* Debug info - remove this after fixing */}
+                      <div className="mt-2 text-xs text-gray-400 border-t pt-2">
+                        Debug: {JSON.stringify(user, null, 2)}
                       </div>
                     </div>
                   ))}
@@ -589,34 +426,6 @@ export default function Dashboard() {
                           }`}>
                             {vehicle.status || 'Unknown'}
                           </span>
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditVehicle(vehicle);
-                              }}
-                              className="inline-flex items-center px-3 py-1 border border-blue-100 text-xs font-medium rounded-lg text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 shadow-sm transition-all duration-200"
-                              title="Edit vehicle"
-                            >
-                              <svg className="h-3.5 w-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                              Edit
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteVehicle(vehicle._id || vehicle.id, vehicle.number || 'this vehicle');
-                              }}
-                              className="inline-flex items-center px-3 py-1 border border-red-100 text-xs font-medium rounded-lg text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-500 shadow-sm transition-all duration-200"
-                              title="Delete vehicle"
-                            >
-                              <svg className="h-3.5 w-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                              Delete
-                            </button>
-                          </div>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
@@ -639,34 +448,6 @@ export default function Dashboard() {
                           }`}>
                             {driver.status || 'Unknown'}
                           </span>
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditDriver(driver);
-                              }}
-                              className="inline-flex items-center px-3 py-1 border border-blue-100 text-xs font-medium rounded-lg text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 shadow-sm transition-all duration-200"
-                              title="Edit driver"
-                            >
-                              <svg className="h-3.5 w-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                              Edit
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteDriver(driver._id || driver.id, driver.name || 'this driver');
-                              }}
-                              className="inline-flex items-center px-3 py-1 border border-red-100 text-xs font-medium rounded-lg text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-500 shadow-sm transition-all duration-200"
-                              title="Delete driver"
-                            >
-                              <svg className="h-3.5 w-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                              Delete
-                            </button>
-                          </div>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
@@ -688,34 +469,6 @@ export default function Dashboard() {
                           }`}>
                             {route.status || 'Inactive'}
                           </span>
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditRoute(route);
-                              }}
-                              className="inline-flex items-center px-3 py-1 border border-blue-100 text-xs font-medium rounded-lg text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 shadow-sm transition-all duration-200"
-                              title="Edit route"
-                            >
-                              <svg className="h-3.5 w-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                              Edit
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteRoute(route._id || route.id, route.name || 'this route');
-                              }}
-                              className="inline-flex items-center px-3 py-1 border border-red-100 text-xs font-medium rounded-lg text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-500 shadow-sm transition-all duration-200"
-                              title="Delete route"
-                            >
-                              <svg className="h-3.5 w-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                              Delete
-                            </button>
-                          </div>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">

@@ -12,10 +12,16 @@ const Route = () => {
   });
 
   const [stops, setStops] = useState([]);
+  const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [calculating, setCalculating] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingRouteId, setEditingRouteId] = useState(null);
+  const [showRoutesList, setShowRoutesList] = useState(true);
+  const [routesLoading, setRoutesLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState({});
   const addressTimeoutsRef = React.useRef({});
 
   // API Base URL
@@ -40,6 +46,128 @@ const Route = () => {
       });
     };
   }, []);
+
+  // Load routes on component mount
+  useEffect(() => {
+    fetchRoutes();
+  }, []);
+
+  // Fetch all routes
+  const fetchRoutes = useCallback(async () => {
+    setRoutesLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/routes`);
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setRoutes(data.data);
+      } else {
+        setErrorMessage(`Failed to fetch routes: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Fetch routes error:', error);
+      setErrorMessage('Network error while fetching routes');
+    } finally {
+      setRoutesLoading(false);
+    }
+  }, [API_BASE_URL]);
+
+  // Fetch single route for editing
+  const fetchRouteForEdit = useCallback(async (routeId) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/routes/${routeId}`);
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        const route = data.data;
+        
+        // Parse duration back to minutes
+        const durationMatch = route.duration.match(/(\d+)/);
+        const durationMinutes = durationMatch ? durationMatch[1] : '';
+        
+        // Parse distance back to number
+        const distanceMatch = route.distance.match(/(\d+)/);
+        const distanceKm = distanceMatch ? distanceMatch[1] : '';
+        
+        setFormData({
+          routeId: route.routeNo,
+          name: route.name,
+          origin: route.source,
+          destination: route.destination,
+          estimatedDistanceKm: distanceKm,
+          estimatedTimeMinutes: durationMinutes,
+          isActive: route.status === 'Active'
+        });
+        
+        setStops(route.stops || []);
+        setIsEditing(true);
+        setEditingRouteId(routeId);
+        setShowRoutesList(false);
+      } else {
+        setErrorMessage(`Failed to fetch route details: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Fetch route error:', error);
+      setErrorMessage('Network error while fetching route details');
+    } finally {
+      setLoading(false);
+    }
+  }, [API_BASE_URL]);
+
+  // Delete route
+  const deleteRoute = useCallback(async (routeId, routeName) => {
+    if (!window.confirm(`Are you sure you want to delete the route "${routeName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeleteLoading(prev => ({ ...prev, [routeId]: true }));
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/routes/${routeId}`, {
+        method: 'DELETE'
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setSuccessMessage(data.message);
+        await fetchRoutes(); // Refresh the routes list
+      } else {
+        setErrorMessage(`Failed to delete route: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Delete route error:', error);
+      setErrorMessage('Network error while deleting route');
+    } finally {
+      setDeleteLoading(prev => ({ ...prev, [routeId]: false }));
+    }
+  }, [API_BASE_URL, fetchRoutes]);
+
+  // Reset form to create new route
+  const resetForm = useCallback(() => {
+    setFormData({
+      routeId: '',
+      name: '',
+      origin: '',
+      destination: '',
+      estimatedDistanceKm: '',
+      estimatedTimeMinutes: '',
+      isActive: true
+    });
+    setStops([]);
+    setIsEditing(false);
+    setEditingRouteId(null);
+    setShowRoutesList(false);
+    setErrorMessage('');
+    setSuccessMessage('');
+  }, []);
+
+  // Cancel editing and go back to routes list
+  const cancelEdit = useCallback(() => {
+    resetForm();
+    setShowRoutesList(true);
+  }, [resetForm]);
 
   // Geocoding function to get lat/lng from address
   const getCoordinatesFromAddress = useCallback(async (address) => {
@@ -261,12 +389,12 @@ const Route = () => {
 
     // Validate required fields
     if (!formData.routeId || !formData.name || !formData.origin || !formData.destination || !formData.estimatedDistanceKm || !formData.estimatedTimeMinutes) {
-      setErrorMessage("❌ All route information fields are required!");
+      setErrorMessage("All route information fields are required!");
       return;
     }
     
     if (stops.length === 0) {
-      setErrorMessage("❌ Please add at least one stop to the route.");
+      setErrorMessage("Please add at least one stop to the route.");
       return;
     }
     
@@ -279,7 +407,7 @@ const Route = () => {
     );
     
     if (invalidStops.length > 0) {
-      setErrorMessage("❌ Please ensure all stops have valid names, addresses, and coordinates before submitting.");
+      setErrorMessage("Please ensure all stops have valid names, addresses, and coordinates before submitting.");
       return;
     }
     
@@ -305,8 +433,14 @@ const Route = () => {
 
       console.log('Submitting route data:', submitData);
 
-      const response = await fetch(`${API_BASE_URL}/routes`, {
-        method: 'POST',
+      const url = isEditing 
+        ? `${API_BASE_URL}/routes/${editingRouteId}`
+        : `${API_BASE_URL}/routes`;
+      
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -316,43 +450,152 @@ const Route = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setSuccessMessage(`✅ Route "${formData.name}" registered successfully with ${data.stopsAdded} stops!`);
+        const action = isEditing ? 'updated' : 'registered';
+        const stopsAction = isEditing ? data.stopsUpdated : data.stopsAdded;
+        setSuccessMessage(`Route "${formData.name}" ${action} successfully with ${stopsAction} stops!`);
         
-        // Reset form
-        setFormData({
-          routeId: '',
-          name: '',
-          origin: '',
-          destination: '',
-          estimatedDistanceKm: '',
-          estimatedTimeMinutes: '',
-          isActive: true
-        });
-        setStops([]);
+        // Reset form and refresh routes list
+        resetForm();
+        setShowRoutesList(true);
+        await fetchRoutes();
         
-        // Clear timeouts
-        Object.values(addressTimeoutsRef.current).forEach(timeout => {
-          if (timeout) clearTimeout(timeout);
-        });
-        addressTimeoutsRef.current = {};
-        
-        console.log('Route registered successfully:', data);
+        console.log(`Route ${action} successfully:`, data);
       } else {
-        setErrorMessage(`❌ ${data.error || 'Route registration failed'}`);
+        setErrorMessage(`${data.error || `Route ${isEditing ? 'update' : 'registration'} failed`}`);
       }
       
     } catch (error) {
-      console.error('Route registration error:', error);
-      setErrorMessage("❌ Network error. Please check if the backend server is running.");
+      console.error(`Route ${isEditing ? 'update' : 'registration'} error:`, error);
+      setErrorMessage("Network error. Please check if the backend server is running.");
     } finally {
       setLoading(false);
     }
-  }, [formData, stops, API_BASE_URL]);
+  }, [formData, stops, API_BASE_URL, isEditing, editingRouteId, resetForm, fetchRoutes]);
 
+  // Routes List View
+  if (showRoutesList) {
+    return (
+      <div className="bg-white p-6 rounded-xl shadow-lg max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-blue-700 mb-2">Route Management</h2>
+            <p className="text-gray-500">View, edit, and manage all routes</p>
+          </div>
+          <button
+            onClick={resetForm}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+          >
+            Create New Route
+          </button>
+        </div>
+
+        {successMessage && (
+          <div className="bg-green-100 border border-green-400 p-4 rounded-lg text-green-800 mb-4">
+            {successMessage}
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="bg-red-100 border border-red-400 p-4 rounded-lg text-red-800 mb-4">
+            {errorMessage}
+          </div>
+        )}
+
+        {routesLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="ml-3 text-gray-600">Loading routes...</span>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse border border-gray-300">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold">Route ID</th>
+                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold">Name</th>
+                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold">Source</th>
+                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold">Destination</th>
+                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold">Distance</th>
+                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold">Duration</th>
+                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold">Stops</th>
+                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold">Status</th>
+                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {routes.length === 0 ? (
+                  <tr>
+                    <td colSpan="9" className="border border-gray-300 px-4 py-8 text-center text-gray-500">
+                      No routes found. Create your first route to get started.
+                    </td>
+                  </tr>
+                ) : (
+                  routes.map((route) => (
+                    <tr key={route.id} className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-4 py-3 font-mono text-sm">{route.routeNo}</td>
+                      <td className="border border-gray-300 px-4 py-3">{route.name}</td>
+                      <td className="border border-gray-300 px-4 py-3">{route.source}</td>
+                      <td className="border border-gray-300 px-4 py-3">{route.destination}</td>
+                      <td className="border border-gray-300 px-4 py-3">{route.distance}</td>
+                      <td className="border border-gray-300 px-4 py-3">{route.duration}</td>
+                      <td className="border border-gray-300 px-4 py-3 text-center">{route.stopCount}</td>
+                      <td className="border border-gray-300 px-4 py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          route.status === 'Active' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {route.status}
+                        </span>
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => fetchRouteForEdit(route.id)}
+                            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                            disabled={loading}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteRoute(route.id, route.name)}
+                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                            disabled={deleteLoading[route.id]}
+                          >
+                            {deleteLoading[route.id] ? 'Deleting...' : 'Delete'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Form View (Create/Edit)
   return (
     <div className="bg-white p-6 rounded-xl shadow-lg max-w-6xl mx-auto">
-      <h2 className="text-2xl font-bold text-blue-700 mb-2">Route Registration</h2>
-      <p className="text-gray-500 mb-4">Create a new route with multiple stops and save to database</p>
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h2 className="text-2xl font-bold text-blue-700 mb-2">
+            {isEditing ? 'Edit Route' : 'Route Registration'}
+          </h2>
+          <p className="text-gray-500">
+            {isEditing ? 'Update route information and stops' : 'Create a new route with multiple stops and save to database'}
+          </p>
+        </div>
+        <button
+          onClick={cancelEdit}
+          className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+        >
+          Back to Routes
+        </button>
+      </div>
 
       {successMessage && (
         <div className="bg-green-100 border border-green-400 p-4 rounded-lg text-green-800 mb-4">
@@ -383,7 +626,8 @@ const Route = () => {
                 value={formData.routeId}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={isEditing} // Disable route ID editing to prevent conflicts
+                className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${isEditing ? 'bg-gray-100' : ''}`}
               />
             </div>
             <div>
@@ -607,10 +851,10 @@ const Route = () => {
             {loading ? (
               <div className="flex items-center justify-center gap-2">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Registering Route...
+                {isEditing ? 'Updating Route...' : 'Registering Route...'}
               </div>
             ) : (
-              'Register Route'
+              isEditing ? 'Update Route' : 'Register Route'
             )}
           </button>
         </div>
